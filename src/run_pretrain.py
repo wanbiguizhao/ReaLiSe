@@ -23,7 +23,7 @@ from tqdm import tqdm, trange
 from transformers import (WEIGHTS_NAME, BertConfig, BertTokenizer)
 
 from transformers import AdamW, get_linear_schedule_with_warmup
-from models import Pho2ResPretrain, Pho2Pretrain, _is_chinese_char
+from .models import Pho2ResPretrain, Pho2Pretrain, _is_chinese_char
 
 import pickle
 

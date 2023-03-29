@@ -10,12 +10,12 @@ from torch import nn
 from torch.nn import CrossEntropyLoss, MSELoss
 
 from transformers.modeling_bert import *
-from utils import pho_convertor, pho2_convertor
+from .helper import pho_convertor, pho2_convertor
 from copy import deepcopy
 from PIL import ImageFont
 import numpy as np
 
-from char_cnn import CharResNet, CharResNet1
+from .char_cnn import CharResNet, CharResNet1
 
 def _is_chinese_char(cp):
     if ((cp >= 0x4E00 and cp <= 0x9FFF) or  #

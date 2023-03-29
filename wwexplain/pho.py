@@ -8,7 +8,7 @@ PROJECT_DIR=os.path.dirname(
 )
 sys.path.append(PROJECT_DIR)
 from transformers import BertConfig,BertTokenizer
-from src import Pho2ResPretrain,create_dataset,data_helper,make_features
+from src import Pho2ResPretrain,Pho2Pretrain,create_dataset,data_helper,make_features
 import torch
 class Args:
     def __init__(self) -> None:
@@ -31,11 +31,11 @@ def instance_pho():
     args.max_seq_length=512
     device = torch.device("cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu")
     args.device = device
-    config_class, model_class, tokenizer_class = BertConfig,Pho2ResPretrain,BertTokenizer
+    config_class, model_class, tokenizer_class = BertConfig,Pho2Pretrain,BertTokenizer
     config = BertConfig.from_pretrained("pretrained/config.json")
     tokenizer=BertTokenizer("pretrained/vocab.txt")
-    model=Pho2ResPretrain(config)
-    batch_processor = Pho2ResPretrain.build_batch
+    model=Pho2Pretrain.from_pretrained("pretrained")
+    batch_processor = Pho2Pretrain.build_batch
 
     model.to(args.device)
 

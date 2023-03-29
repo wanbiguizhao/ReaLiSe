@@ -1248,21 +1248,24 @@ class Pho2ResPretrain(BertPreTrainedModel):
         pho_idx = batch['pho_idx']
         pho_lens = batch['pho_lens']
 
-        input_shape = input_ids.size()
+        input_shape = input_ids.size()# batch_size*max_seq_length
         
-        pho_embeddings = self.pho_embeddings(pho_idx)
+        pho_embeddings = self.pho_embeddings(pho_idx)# 这个batch_size是1024的字符，然后每个字符都有自己的汉语拼音。
         pho_embeddings = torch.nn.utils.rnn.pack_padded_sequence(
             input=pho_embeddings,
             lengths=pho_lens,
             batch_first=True,
             enforce_sorted=False,
-        )
-        _, pho_hiddens = self.pho_gru(pho_embeddings)
-        pho_hiddens = pho_hiddens.squeeze(0).reshape(input_shape[0], input_shape[1], -1).contiguous()
+        )# [1024,6,768]->[1340,768],为什么要执行这一步呢？这一步的意义是什么呢？1340=sum(pho_lens)是什么意思呢？是把所有的拼音都处理一下了吗？
+        # pack是压缩的意思，这一步的意思是压缩数据。
+        _, pho_hiddens = self.pho_gru(pho_embeddings)# 进行操作的时候，应该会自动恢复到1024的字符长度。应该是自动执行了pad_pack_sequence
+        pho_hiddens = pho_hiddens.squeeze(0).reshape(input_shape[0], input_shape[1], -1).contiguous()# 对显存进行的操作，把这部分数据变化成连续的数据。
         
-        src_idxs = input_ids.view(-1)
+        src_idxs = input_ids.view(-1)# 把一个batch中所有的额汉字 都 flatten
+        # 等等以后这个地方注意一下，他的输入是
 
         if self.config.num_fonts == 1:
+            # 这块儿是什么意思？怎么还加入图片的模态。
             images = self.char_images(src_idxs).reshape(src_idxs.shape[0], 1, 32, 32).contiguous()
         else:
             images = self.char_images.index_select(dim=0, index=src_idxs)
@@ -1333,14 +1336,16 @@ class Pho2Pretrain(BertPreTrainedModel):
         )
         _, pho_hiddens = self.pho_gru(pho_embeddings)
         pho_hiddens = pho_hiddens.squeeze(0).reshape(input_shape[0], input_shape[1], -1).contiguous()
+        # 这个时候把
         sequence_output = self.pho_model(inputs_embeds=pho_hiddens, attention_mask=attention_mask)[0]
+        # 这个应该是bert的头的输出了，输出的结构是，2，512，768，没有问题。
 
         prediction_scores = self.cls2(sequence_output)
-
+        # 现在的做法应该是，先输入是正确的，然后让他预测也是正确的，之后在微调吧？
         loss_fct = CrossEntropyLoss()
         # Only keep active parts of the loss
         active_loss = loss_mask.view(-1) == 1
-        active_logits = prediction_scores.view(-1, self.vocab_size)[active_loss]
+        active_logits = prediction_scores.view(-1, self.vocab_size)[active_loss]# 这块应该就是不计算那些标点符号，填充符号的损失了。
         active_labels = input_ids.view(-1)[active_loss]
         loss = loss_fct(active_logits, active_labels)
         outputs = (loss, active_logits.argmax(dim=-1), active_labels, )

@@ -95,7 +95,7 @@ class Pinyin2(object):
             batch_first=True,
             padding_value=0,
         )
-        return pinyin_ids, pinyin_lens# 这块儿把汉语拼音拉平，
+        return pinyin_ids, pinyin_lens# 这块儿把汉语拼音的长度拉平，1024x6 ,因为batch_size =2 ，max_seq_length=512 ,进行了flatten操作，所以Batch_size变成了1024
 pho2_convertor = Pinyin2()
 
 if __name__=='__main__':

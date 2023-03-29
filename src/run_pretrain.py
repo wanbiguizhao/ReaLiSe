@@ -59,14 +59,15 @@ def make_features(args, examples, tokenizer, batch_processor):
                 seq = item[t][:max_length]
                 padding_length = max_length - len(seq)
                 batch[t].append(seq + ([0]*padding_length))
+                # 为什么原来的文字不需要的masks
                 if t == 'tgt_idx':
-                    batch['masks'].append(([1]*len(seq)) + ([0]*padding_length))
+                    batch['masks'].append(([1]*len(seq)) + ([0]*padding_length))# 这块儿应该是attention_mask，不应该注意这一部分的
                     loss_mask = [0] * max_length
-                    tokens = tokenizer.convert_ids_to_tokens(seq)
+                    tokens = tokenizer.convert_ids_to_tokens(seq)# 为什么又翻译回中文了？
                     for i, token in enumerate(tokens):
                         if len(token) == 1 and _is_chinese_char(ord(token)):
                             loss_mask[i] = 1
-                    batch['loss_masks'].append(loss_mask)
+                    batch['loss_masks'].append(loss_mask)# loss 的token应该是记录那些区分中文和不是中的token，中文为1，猜测应该是在注意力机制中起到了只关注中文的作用。
             else:
                 batch[t].append(item[t])
     batch['src_idx'] = torch.tensor(batch['src_idx'], dtype=torch.long)
@@ -74,7 +75,7 @@ def make_features(args, examples, tokenizer, batch_processor):
     batch['masks'] = torch.tensor(batch['masks'], dtype=torch.long)
     batch['loss_masks'] = torch.tensor(batch['loss_masks'], dtype=torch.long)
 
-    batch = batch_processor(batch, tokenizer)
+    batch = batch_processor(batch, tokenizer)# 这一步实现汉字的语音化操作。
     return batch
 
 
@@ -91,7 +92,9 @@ def data_helper(args, dataset, tokenizer, batch_processor, is_eval=False):
     else:
         intervals = [(0, len(dataset))]
         bs = args.eval_batch_size
-
+    # 原来的数据组成[ a1,a2,...,a99 ][a100,..,a199]...
+    # 正常的batch顺序 [a1,a2] [a3,a4]
+    # 改变之后的batch顺序， [a1,a2] [a11,a12] [a3,a4] [a13,a14] 大致类似于这样，猜测的原因是，可以
     for l, r in intervals:
         batches = []
         for i in range(l, r, bs):

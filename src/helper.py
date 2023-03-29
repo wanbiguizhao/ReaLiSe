@@ -72,12 +72,12 @@ class Pinyin2(object):
     @staticmethod
     def get_pinyin(c):
         if len(c) > 1:
-            return 'U'
+            return 'U'# 对于填充数据[PAD]的数据情况。
         s = pypinyin.pinyin(
             c,
             style=pypinyin.Style.TONE3,
             neutral_tone_with_five=True,
-            errors=lambda x: ['U' for _ in x],
+            errors=lambda x: ['U' for _ in x],# 应该是没有读音的就设置成U这样的字符。
         )[0][0]
         if s == 'U':
             return s
@@ -88,14 +88,14 @@ class Pinyin2(object):
 
     def convert(self, chars):
         pinyins = list(map(self.get_pinyin, chars))
-        pinyin_ids = [list(map(self.pho_vocab.get, pinyin)) for pinyin in pinyins]
-        pinyin_lens = [len(pinyin) for pinyin in pinyins]
+        pinyin_ids = [list(map(self.pho_vocab.get, pinyin)) for pinyin in pinyins]# 我之前还在猜想应该把声调放在前面，这样可以更好的掌握知识。
+        pinyin_lens = [len(pinyin) for pinyin in pinyins]# 把拼音调成了转化成token，但是他没有区分多音字的情况。这是一个改进的点？注意力机制啊，q，k，v然后知道应该读什么。
         pinyin_ids = torch.nn.utils.rnn.pad_sequence(
             [torch.tensor(x) for x in pinyin_ids],
             batch_first=True,
             padding_value=0,
         )
-        return pinyin_ids, pinyin_lens
+        return pinyin_ids, pinyin_lens# 这块儿把汉语拼音拉平，
 pho2_convertor = Pinyin2()
 
 if __name__=='__main__':

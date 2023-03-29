@@ -1234,8 +1234,8 @@ class Pho2ResPretrain(BertPreTrainedModel):
 
     @staticmethod
     def build_batch(batch, tokenizer):
-        src_idx = batch['tgt_idx'].flatten().tolist()
-        chars = tokenizer.convert_ids_to_tokens(src_idx)
+        src_idx = batch['tgt_idx'].flatten().tolist()# 变成了batch_size*max_seq_lenght 因为里面本身，此时的数据已经填充了000
+        chars = tokenizer.convert_ids_to_tokens(src_idx)# 重新变成了token的数据。
         pho_idx, pho_lens = pho2_convertor.convert(chars)
         batch['pho_idx'] = pho_idx
         batch['pho_lens'] = pho_lens

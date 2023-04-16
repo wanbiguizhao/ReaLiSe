@@ -20,13 +20,14 @@ class BasicBlock(nn.Module):
             nn.BatchNorm2d(out_channels * BasicBlock.expansion)
         )
 
-        self.shortcut = nn.Sequential()
+        self.shortcut = nn.Sequential()# 使用的原来的x
 
-        if stride != 1 or in_channels != BasicBlock.expansion * out_channels:
+        if stride != 1 or in_channels != BasicBlock.expansion * out_channels:# 这个强制残差可以学习一下
             self.shortcut = nn.Sequential(
-                nn.Conv2d(in_channels, out_channels * BasicBlock.expansion, kernel_size=1, stride=stride, bias=False),
+                nn.Conv2d(in_channels, out_channels * BasicBlock.expansion, kernel_size=1, stride=stride, bias=False),#注意kernel_size是1，变成了一个全连接的事情。
                 nn.BatchNorm2d(out_channels * BasicBlock.expansion)
             )
+            # ？ 这个是要强制使用残差网络吗？
 
     def forward(self, x):
         return nn.ReLU(inplace=True)(self.residual_function(x) + self.shortcut(x))

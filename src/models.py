@@ -278,22 +278,23 @@ class SpellBertPho1Res(BertPreTrainedModel):
         self.classifier.weight = self.bert.embeddings.word_embeddings.weight
 
     def build_glyce_embed(self, vocab_dir, font_path, font_size=32):
+        # 类似于初始化，把图片转换成向量。
         vocab_path = os.path.join(vocab_dir, 'vocab.txt')
         with open(vocab_path, 'r', encoding='utf-8') as f:
             vocab = [s.strip() for s in f]
 
-        font = ImageFont.truetype(font_path, size=font_size)
+        font = ImageFont.truetype(font_path, size=font_size)# 加载字体，font_size指定画出来字体的大小。
 
         char_images = []
         for char in vocab:
             if len(char) != 1 or (not _is_chinese_char(ord(char))):
-                char_images.append(np.zeros((font_size, font_size)).astype(np.float32))
+                char_images.append(np.zeros((font_size, font_size)).astype(np.float32))# 这里直接填充零了。
                 continue
-            image = font.getmask(char)
-            image = np.asarray(image).astype(np.float32).reshape(image.size[::-1])  # Must be [::-1]
+            image = font.getmask(char)#得到一张图片
+            image = np.asarray(image).astype(np.float32).reshape(image.size[::-1])  # Must be [::-1]# 这块应该是格式问题，CHW，还是HWC的样式
 
             # Crop
-            image = image[:font_size, :font_size]
+            image = image[:font_size, :font_size]# 做图片的裁剪
 
             # Pad
             if image.size != (font_size, font_size):
@@ -305,10 +306,10 @@ class SpellBertPho1Res(BertPreTrainedModel):
 
             char_images.append(image)
         char_images = np.array(char_images)
-        char_images = (char_images - np.mean(char_images)) / np.std(char_images)
+        char_images = (char_images - np.mean(char_images)) / np.std(char_images)# 做了图片的归一化操作。
         char_images = torch.from_numpy(char_images).reshape(char_images.shape[0], -1)
-        assert char_images.shape == (21128, 1024)
-        self.char_images.weight.data.copy_(char_images)
+        assert char_images.shape == (21128, 1024)# 21128 是bert标准的vocabulary size，1024是32*32，一张图片的大小
+        self.char_images.weight.data.copy_(char_images)# 把生成图片的每一个像素都记录下来了。
 
     @staticmethod
     def build_batch(batch, tokenizer):
@@ -1178,10 +1179,10 @@ class Pho2ResPretrain(BertPreTrainedModel):
 
         self.vocab_size = config.vocab_size
 
-        self.char_images = nn.Embedding(config.vocab_size, 1024)
-        self.char_images.weight.requires_grad = False
+        self.char_images = nn.Embedding(config.vocab_size, 1024)#这里的意思是，每一个汉字的图片都转换成1024维度的图片。
+        self.char_images.weight.requires_grad = False# 每个字符对应一个向量，但是不要求梯度，也就是不再变化的意思？
 
-        self.pho_embeddings = nn.Embedding(pho2_convertor.get_pho_size(), config.hidden_size, padding_idx=0)
+        self.pho_embeddings = nn.Embedding(pho2_convertor.get_pho_size(), config.hidden_size, padding_idx=0)#这个是声音的嵌入层，5个读音加上拼音字母
         self.pho_gru = nn.GRU(
             input_size=config.hidden_size,
             hidden_size=config.hidden_size,
@@ -1190,7 +1191,7 @@ class Pho2ResPretrain(BertPreTrainedModel):
             dropout=0,
             bidirectional=False,
         )
-        self.resnet = CharResNet()
+        self.resnet = CharResNet()# 这个是给图片识别使用的网络。
         pho_res_config = deepcopy(config)
         pho_res_config.num_hidden_layers = 4
         self.pho_res_model = BertModel(pho_res_config)
@@ -1225,9 +1226,9 @@ class Pho2ResPretrain(BertPreTrainedModel):
                 back_image[offset0:offset0 + image.shape[0], offset1:offset1 + image.shape[1]] = image
                 image = back_image
 
-            char_images.append(image)
+            char_images.append(image)# 给每个汉字都配上了图片
         char_images = np.array(char_images)
-        char_images = (char_images - np.mean(char_images)) / np.std(char_images)
+        char_images = (char_images - np.mean(char_images)) / np.std(char_images)# 归一化图片
         char_images = torch.from_numpy(char_images).reshape(char_images.shape[0], -1)
         assert char_images.shape == (21128, 1024)
         self.char_images.weight.data.copy_(char_images)

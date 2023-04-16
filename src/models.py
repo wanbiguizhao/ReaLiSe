@@ -1368,14 +1368,14 @@ class ResPretrain(BertPreTrainedModel):
             self.char_images_multifonts.requires_grad = False
 
         if config.image_model_type == 0:
-            self.resnet = CharResNet(in_channels=self.config.num_fonts)
+            self.resnet = CharResNet(in_channels=self.config.num_fonts)# 懂了，通过chanel的数量做输入。多个图片，就是多个channel的。
         elif config.image_model_type == 1:
             self.resnet = CharResNet1()
         else:
             raise NotImplementedError('invalid image_model_type %d'%config.image_model_type)
 
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
-        self.cls3 = nn.Linear(config.hidden_size, config.vocab_size)
+        self.cls3 = nn.Linear(config.hidden_size, config.vocab_size)# 线性层的预测分数。
 
         self.init_weights()
 

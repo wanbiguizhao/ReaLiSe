@@ -685,7 +685,7 @@ class SpellBertPho2ResArch3(BertPreTrainedModel):
             self.resnet = CharResNet1()
         else:
             raise NotImplementedError('invalid image_model_type %d'%config.image_model_type)
-        self.resnet_layernorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
+        self.resnet_layernorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)# 层norm处理。
 
         self.gate_net = nn.Linear(4*config.hidden_size, 3)
 
@@ -756,8 +756,9 @@ class SpellBertPho2ResArch3(BertPreTrainedModel):
                 use_traditional=use_traditional,
             )
             images_list.append(images)
-
-        char_images = torch.stack(images_list, dim=1).contiguous()
+        # images_list  num_font x vocable_size 
+        char_images = torch.stack(images_list, dim=1).contiguous()# 把一个汉字对应的所有图片都放到一起了。
+        # images_list   vocable_size x num_font
         self.char_images_multifonts.data.copy_(char_images)
 
     # Add by hengdaxu
@@ -835,7 +836,7 @@ class SpellBertPho2ResArch3(BertPreTrainedModel):
             images = self.char_images_multifonts.index_select(dim=0, index=src_idxs)
 
         res_hiddens = self.resnet(images)
-        res_hiddens = res_hiddens.reshape(input_shape[0], input_shape[1], -1).contiguous()
+        res_hiddens = res_hiddens.reshape(input_shape[0], input_shape[1], -1).contiguous()# 批量大小，句子长度
         res_hiddens = self.resnet_layernorm(res_hiddens)
 
         bert_hiddens_mean = (bert_hiddens * attention_mask.to(torch.float).unsqueeze(2)).sum(dim=1) / attention_mask.to(torch.float).sum(dim=1, keepdim=True)
@@ -1413,6 +1414,7 @@ class ResPretrain(BertPreTrainedModel):
 
     # Add by hengdaxu
     def build_glyce_embed_multifonts(self, vocab_dir, num_fonts, use_traditional_font, font_size=32):
+        # 多个字体的情况
         font_paths = [
             ('simhei.ttf', False),
             ('xiaozhuan.ttf', False),

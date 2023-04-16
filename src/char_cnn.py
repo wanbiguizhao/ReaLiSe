@@ -71,7 +71,7 @@ class CharResNet1(torch.nn.Module):
         h = self.res_block2(h)
         h = self.res_block3(h)
         h = self.res_block4(h)
-        h = h.view(h.shape[0], -1)
+        h = h.view(h.shape[0], -1)# 是这里直接变成了Bx剩下的维度
         return h
 
 
@@ -86,6 +86,10 @@ if __name__ == '__main__':
     model = CharResNet(in_channels=4)
 
     x = torch.rand(5, 4, 32, 32)
+    h = model(x)
+    print(x.shape)
+    print(h.shape)
+    model = CharResNet1(in_channels=4)
     h = model(x)
     print(x.shape)
     print(h.shape)

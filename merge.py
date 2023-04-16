@@ -56,3 +56,4 @@ if __name__=='__main__':
     #         for resv in ['epoch8_font1']:
     #             print('Merge:', pho_model%(bs, mxs), res_model%resv, '...')
     #             merge(pho_model%(bs, mxs), res_model%resv, out_path%(bs, mxs, resv))
+    # 模型把所有的预训练的模型存放到了bert的模型中。
